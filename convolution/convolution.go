@@ -4,12 +4,11 @@ import "math/bits"
 
 func powMod(a, e, mod int) int {
 	res, m := 1, a
-	for e > 0 {
+	for ; e > 0; e >>= 1 {
 		if e&1 != 0 {
 			res = res * m % mod
 		}
 		m = m * m % mod
-		e >>= 1
 	}
 	return res
 }
@@ -65,32 +64,32 @@ func (q *Convolution) butterfly(a []int) {
 	mod := q.mod
 	n := len(a)
 	h := ceilPow2(n)
-	len := 0
-	for len < h {
-		if h-len == 1 {
-			p := 1 << (h - len - 1)
+	l := 0
+	for l < h {
+		if h-l == 1 {
+			p := 1 << (h - l - 1)
 			rot := 1
-			for s := 0; s < (1 << len); s++ {
-				offset := s << (h - len)
+			for s := 0; s < (1 << l); s++ {
+				offset := s << (h - l)
 				for i := 0; i < p; i++ {
 					l := a[i+offset]
 					r := a[i+offset+p] * rot % mod
 					a[i+offset] = (l + r) % mod
 					a[i+offset+p] = (l - r + mod) % mod
 				}
-				if s+1 != (1 << len) {
+				if s+1 != (1 << l) {
 					rot = rot * q.rate2[bits.TrailingZeros(^uint(s))] % mod
 				}
 			}
-			len++
+			l++
 		} else {
-			p := 1 << (h - len - 2)
+			p := 1 << (h - l - 2)
 			rot := 1
 			imag := q.root[2]
-			for s := 0; s < (1 << len); s++ {
+			for s := 0; s < (1 << l); s++ {
 				rot2 := rot * rot % mod
 				rot3 := rot2 * rot % mod
-				offset := s << (h - len)
+				offset := s << (h - l)
 				for i := 0; i < p; i++ {
 					mod2 := mod * mod
 					a0 := a[i+offset]
@@ -104,11 +103,11 @@ func (q *Convolution) butterfly(a []int) {
 					a[i+offset+2*p] = (a0 + na2 + a1na3imag) % mod
 					a[i+offset+3*p] = (a0 + na2 + (mod2 - a1na3imag)) % mod
 				}
-				if s+1 != (1 << len) {
+				if s+1 != (1 << l) {
 					rot = rot * q.rate3[bits.TrailingZeros(^uint(s))] % mod
 				}
 			}
-			len += 2
+			l += 2
 		}
 	}
 }
@@ -117,32 +116,32 @@ func (q *Convolution) butterflyInv(a []int) {
 	mod := q.mod
 	n := len(a)
 	h := ceilPow2(n)
-	len := h
-	for len > 0 {
-		if len == 1 {
-			p := 1 << (h - len)
+	l := h
+	for l > 0 {
+		if l == 1 {
+			p := 1 << (h - l)
 			irot := 1
-			for s := 0; s < (1 << (len - 1)); s++ {
-				offset := s << (h - len + 1)
+			for s := 0; s < (1 << (l - 1)); s++ {
+				offset := s << (h - l + 1)
 				for i := 0; i < p; i++ {
 					l := a[i+offset]
 					r := a[i+offset+p]
 					a[i+offset] = (l + r) % mod
 					a[i+offset+p] = (l - r + mod) % mod
 				}
-				if s+1 != (1 << (len - 1)) {
+				if s+1 != (1 << (l - 1)) {
 					irot = irot * q.irate2[bits.TrailingZeros(^uint(s))] % mod
 				}
 			}
-			len--
+			l--
 		} else {
-			p := 1 << (h - len)
+			p := 1 << (h - l)
 			irot := 1
 			iimag := q.iroot[2]
-			for s := 0; s < (1 << (len - 2)); s++ {
+			for s := 0; s < (1 << (l - 2)); s++ {
 				irot2 := irot * irot % mod
 				irot3 := irot2 * irot % mod
-				offset := s << (h - len + 2)
+				offset := s << (h - l + 2)
 				for i := 0; i < p; i++ {
 					a0 := a[i+offset]
 					a1 := a[i+offset+p]
@@ -154,11 +153,11 @@ func (q *Convolution) butterflyInv(a []int) {
 					a[i+offset+2*p] = (a0 + a1 + (mod - a2) + (mod - a3)) * irot2 % mod
 					a[i+offset+3*p] = (a0 + (mod - a1) + (mod - a2na3iimag)) * irot3 % mod
 				}
-				if s+1 != (1 << (len - 2)) {
+				if s+1 != (1 << (l - 2)) {
 					irot = irot * q.irate3[bits.TrailingZeros(^uint(s))] % mod
 				}
 			}
-			len -= 2
+			l -= 2
 		}
 	}
 	iz := powMod(n, mod-2, mod)
@@ -227,7 +226,6 @@ func (q *Convolution) Convolve(a []int, b []int) []int {
 	}
 	if n <= 60 {
 		return q.ConvolutionNaive(a, b)
-	} else {
-		return q.convolveFFT(a, b)
 	}
+	return q.convolveFFT(a, b)
 }
