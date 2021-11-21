@@ -60,8 +60,8 @@ func (mfg *MfGraph) Flow(s, t int) int {
 
 func (mfg *MfGraph) FlowCapped(s, t int, flowLimit int) int {
 	level := make([]int, mfg.n)
-	var bfs func()
-	bfs = func() {
+	iter := make([]int, mfg.n)
+	bfs := func() {
 		for i := 0; i < len(level); i++ {
 			level[i] = -1
 		}
@@ -83,7 +83,6 @@ func (mfg *MfGraph) FlowCapped(s, t int, flowLimit int) int {
 			}
 		}
 	}
-	iter := make([]int, mfg.n)
 	var dfs func(int, int) int
 	dfs = func(v, up int) int {
 		if v == s {
