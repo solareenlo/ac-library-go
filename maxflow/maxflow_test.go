@@ -204,8 +204,7 @@ func TestMaxFrow_SelfLoop(t *testing.T) {
 		assert.Equal(expect.flow, actual.flow)
 	}
 
-	var e edge
-	e = edge{0, 0, 100, 0}
+	e := edge{0, 0, 100, 0}
 	edgeEqual(e, g.GetEdge(0))
 }
 
